@@ -1,5 +1,5 @@
 import { deepseek } from '@ai-sdk/deepseek';
-import { generateObject, NoObjectGeneratedError, TypeValidationError } from "ai"
+import { generateObject, NoObjectGeneratedError } from "ai"
 import { z } from "zod"
 import yahooFinance from 'yahoo-finance2'
 
@@ -14,28 +14,28 @@ const tradeAnalysisSchema = z.object({
     date_time: z.string(),
     market_conditions: z.object({
       trend: z.enum(["uptrend", "downtrend", "sideways"]),
-      support_levels: z.array(z.number()),
-      resistance_levels: z.array(z.number()),
-      breakout_points: z.array(z.number()),
-      breakdown_points: z.array(z.number()),
-      divergences: z.string(),
-      volume_analysis: z.string(),
+      support_levels: z.array(z.number()).default([]),
+      resistance_levels: z.array(z.number()).default([]),
+      breakout_points: z.array(z.number()).default([]),
+      breakdown_points: z.array(z.number()).default([]),
+      divergences: z.string().default(""),
+      volume_analysis: z.string().default(""),
     }),
     technical_indicators: z.object({
       moving_averages: z.object({
-        MA20: z.number(),
-        MA50: z.number(),
-        MA200: z.number(),
+        MA20: z.number().default(0),
+        MA50: z.number().default(0),
+        MA200: z.number().default(0),
       }),
-      RSI: z.number(),
+      RSI: z.number().default(50),
       MACD: z.object({
-        value: z.number(),
-        signal: z.number(),
+        value: z.number().default(0),
+        signal: z.number().default(0),
       }),
       bollinger_bands: z.object({
-        upper: z.number(),
-        middle: z.number(),
-        lower: z.number(),
+        upper: z.number().default(0),
+        middle: z.number().default(0),
+        lower: z.number().default(0),
       }),
     }),
     trade_plan: z.object({
@@ -45,26 +45,26 @@ const tradeAnalysisSchema = z.object({
         max: z.number(),
       }),
       stop_loss: z.number(),
-      take_profit_targets: z.array(z.number()),
-      position_size_lot: z.number(),
-      lot_size_basis: z.string(),
-      estimated_capital_used: z.number(),
-      risk_reward_ratio: z.number(),
-      risk_percent: z.number(),
+      take_profit_targets: z.array(z.number()).default([]),
+      position_size_lot: z.number().default(0),
+      lot_size_basis: z.string().default(""),
+      estimated_capital_used: z.number().default(0),
+      risk_reward_ratio: z.number().default(0),
+      risk_percent: z.number().default(0),
     }),
     simple_conclusion: z.object({
       summary: z.string(),
       entry: z.string(),
       stop_loss: z.number(),
-      take_profit: z.array(z.number()),
+      take_profit: z.array(z.number()).default([]),
       decision: z.enum(["Buy", "Sell", "Wait"]),
-      suggested_lot: z.number(),
-      buy_price_per_share: z.number(),
-      total_buy_cost: z.number(),
-      sell_targets: z.array(z.number()),
-      currency: z.string(),
-      confidence: z.number(),
-      broker_note: z.string(),
+      suggested_lot: z.number().default(0),
+      buy_price_per_share: z.number().default(0),
+      total_buy_cost: z.number().default(0),
+      sell_targets: z.array(z.number()).default([]),
+      currency: z.string().default("USD"),
+      confidence: z.number().default(0),
+      broker_note: z.string().default(""),
     }),
   }),
 })
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     Current volume: ${lastVolume}
     Recent OHLC (3 months daily): ${JSON.stringify(history.indicators.quote.slice(-30))}
 
-    Always output a single JSON object in this format:
+    IMPORTANT: You must respond with ONLY a valid JSON object, no additional text before or after. The response must strictly follow this exact format:
 
     {
       "trade_analysis": {
@@ -176,11 +176,36 @@ export async function POST(req: Request) {
         console.log('Usage:', error.usage);
         console.log('Finish Reason:', error.finishReason);
 
-        return Response.json(error.text);
+        // Try to parse the text as JSON manually
+        if (error.text) {
+          try {
+            const parsedJson = JSON.parse(error.text);
+            return Response.json(parsedJson);
+          } catch (parseError) {
+            console.log('Failed to parse response as JSON:', parseError);
+
+            // Return the raw text response with error indication
+            return Response.json({
+              error: "Failed to generate structured response",
+              raw_text: error.text,
+              suggestion: "The AI provided a response but it doesn't match the expected format"
+            }, { status: 200 });
+          }
+        }
+
+        return Response.json({
+          error: "No valid response generated",
+          details: "The AI model didn't return any usable content"
+        }, { status: 500 });
       }
+
+      // Handle other types of errors
+      console.error('Other generateObject error:', error);
+      return Response.json({
+        error: "Failed to generate analysis",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }, { status: 500 });
     }
-  
-    return Response.json({error: "No Result"});
   } catch (error) {
     console.error("Error analyzing trade:", error)
     return Response.json({ error: "Failed to analyze trade" }, { status: 500 })

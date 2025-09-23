@@ -63,7 +63,7 @@ export function TradeAnalysisResult({ analysis }: TradeAnalysisProps) {
   const { trade_analysis } = analysis
 
   if (!trade_analysis) {
-    return  <div className="space-y-6"><Card className="border-2"><div>Failed to load analysis</div></Card></div>
+    return  <div className="space-y-6"><Card className="border-2">  <CardContent className="space-y-6"><div>Failed to load analysis</div></CardContent></Card></div>
   }
 
   const { simple_conclusion, market_conditions, technical_indicators, trade_plan } = trade_analysis

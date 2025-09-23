@@ -110,11 +110,6 @@ export function TradingAnalysisSystem() {
           Get intelligent trade analysis powered by AI. Input your asset and investment amount to receive comprehensive
           trading recommendations with clear buy/sell signals.
         </p>
-        <div className="flex justify-center">
-          <Link href="/demo" className="text-sm text-primary hover:underline flex items-center gap-1">
-            View Demo Analysis →
-          </Link>
-        </div>
       </div>
 
       {/* Input Form */}
