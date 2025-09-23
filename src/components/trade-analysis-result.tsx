@@ -66,7 +66,7 @@ export function TradeAnalysisResult({ analysis }: TradeAnalysisProps) {
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'IDR',
+      currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount)
@@ -294,6 +294,26 @@ export function TradeAnalysisResult({ analysis }: TradeAnalysisProps) {
                 <div className="text-center p-2 bg-muted rounded">
                   <div className="font-medium">Signal</div>
                   <div>{formatNumber(technical_indicators.MACD.signal, 3)}</div>
+                </div>
+              </div>
+            </div>
+             <Separator />
+
+            {/* Bollinger Bands */}
+            <div className="space-y-2">
+              <span className="font-medium">Bollinger Bands</span>
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="text-center p-2 bg-muted rounded">
+                  <div className="font-medium">Upper</div>
+                  <div>{formatNumber(technical_indicators.bollinger_bands.upper, 3)}</div>
+                </div>
+                <div className="text-center p-2 bg-muted rounded">
+                  <div className="font-medium">Middle</div>
+                  <div>{formatNumber(technical_indicators.bollinger_bands.middle, 3)}</div>
+                </div>
+                    <div className="text-center p-2 bg-muted rounded">
+                  <div className="font-medium">Lower</div>
+                  <div>{formatNumber(technical_indicators.bollinger_bands.lower, 3)}</div>
                 </div>
               </div>
             </div>

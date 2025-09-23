@@ -1,6 +1,12 @@
-import { google } from '@ai-sdk/google';
-import { generateObject } from "ai"
+import { deepseek } from '@ai-sdk/deepseek';
+import { generateObject, NoObjectGeneratedError } from "ai"
 import { z } from "zod"
+import yahooFinance from 'yahoo-finance2'
+
+function addMonths(date: Date, months: number) {
+  date.setMonth(date.getMonth() + months);
+  return date;
+}
 
 const tradeAnalysisSchema = z.object({
   trade_analysis: z.object({
@@ -71,6 +77,21 @@ export async function POST(req: Request) {
       return Response.json({ error: "Asset and investment amount are required" }, { status: 400 })
     }
 
+     // 1. Ambil harga real-time + candle
+    const quote = await yahooFinance.quote(asset)
+    const history = await yahooFinance.chart(asset, {
+      period1: addMonths(new Date(), -3),   // start date
+      period2: new Date(),     // end date (today)
+      interval: "1d",          // daily candles
+      includePrePost: false,
+      return: "object"
+    });
+
+    // Ambil closing price terakhir
+    const lastClose = history.indicators.quote.at(-1)?.close ?? 0
+    const lastVolume = history.indicators.quote.at(-1)?.volume ?? 0
+
+
     const prompt = `
     Act as an experienced day trader and trading coach. Your objective is to analyze the price and volume patterns of "${asset}" for a potential trade with an investment amount of IDR $${investment} to identify potential buying or selling opportunities. 
     Utilize advanced charting tools and technical indicators to scrutinize both short-term and long-term patterns, taking into account historical data and recent market movements. 
@@ -78,6 +99,10 @@ export async function POST(req: Request) {
     Provide a comprehensive analysis report that details potential breakout or breakdown points, support and resistance levels, and any anomalies or divergences noticed. 
     Your analysis should be backed by logical reasoning and should include potential risk and reward scenarios. Always adhere to best practices in technical analysis and maintain the highest standards of accuracy and objectivity.
     For the asset and investment amount, analyze its price and volume patterns to identify trading opportunities. Use technical indicators (MA, RSI, MACD, Bollinger Bands, Fibonacci, volume analysis, etc.) and determine the overall trend, support/resistance, breakout/breakdown points, and divergences.
+
+    Current price: ${lastClose}
+    Current volume: ${lastVolume}
+    Recent OHLC (3 months daily): ${JSON.stringify(history.indicators.quote.slice(-30))}
 
     Always output a single JSON object in this format:
 
@@ -133,17 +158,29 @@ export async function POST(req: Request) {
     }
     `
 
-    const { object } = await generateObject({
-      // model: openai("gpt-4o"),
-      model: google('gemini-2.5-flash'),
-      schema: tradeAnalysisSchema,
-      prompt,
-      maxOutputTokens: 2000,
-    })
+    try{
+      const { object } = await generateObject({
+        // model: openai("gpt-4o"),
+        model: deepseek('deepseek-chat'),
+        schema: tradeAnalysisSchema,
+        prompt,
+      });
+      return Response.json(object)
 
-    console.log(object);
+    }catch(error){
+      if (NoObjectGeneratedError.isInstance(error)) {
+        console.log('NoObjectGeneratedError');
+        console.log('Cause:', error.cause);
+        console.log('Text:', error.text);
+        console.log('Response:', error.response);
+        console.log('Usage:', error.usage);
+        console.log('Finish Reason:', error.finishReason);
 
-    return Response.json(object)
+        return Response.json(error.text);
+      }
+    }
+  
+    return Response.json({error: "No Result"});
   } catch (error) {
     console.error("Error analyzing trade:", error)
     return Response.json({ error: "Failed to analyze trade" }, { status: 500 })
