@@ -1,5 +1,5 @@
 import { deepseek } from '@ai-sdk/deepseek';
-import { generateObject, NoObjectGeneratedError } from "ai"
+import { generateObject, NoObjectGeneratedError, TypeValidationError } from "ai"
 import { z } from "zod"
 import yahooFinance from 'yahoo-finance2'
 
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 
 
     const prompt = `
-    Act as an experienced day trader and trading coach. Your objective is to analyze the price and volume patterns of "${asset}" for a potential trade with an investment amount of IDR $${investment} to identify potential buying or selling opportunities. 
+    Act as an experienced day trader and trading coach. Your objective is to analyze the price and volume patterns of "${asset}" for a potential trade with an investment amount of IDR ${investment} to identify potential buying or selling opportunities. 
     Utilize advanced charting tools and technical indicators to scrutinize both short-term and long-term patterns, taking into account historical data and recent market movements. 
     Assess the correlation between price and volume to gauge the strength or weakness of a particular price trend. 
     Provide a comprehensive analysis report that details potential breakout or breakdown points, support and resistance levels, and any anomalies or divergences noticed. 
