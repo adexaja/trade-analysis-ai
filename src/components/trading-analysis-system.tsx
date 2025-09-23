@@ -71,6 +71,7 @@ export function TradingAnalysisSystem() {
     if (!asset || !investment) return
 
     setLoading(true)
+
     try {
       const response = await fetch("/api/analyze-trade", {
         method: "POST",
@@ -84,6 +85,7 @@ export function TradingAnalysisSystem() {
       })
 
       if (!response.ok) {
+        console.log(response)
         throw new Error("Failed to analyze trade")
       }
 

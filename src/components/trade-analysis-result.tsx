@@ -61,12 +61,22 @@ interface TradeAnalysisProps {
 
 export function TradeAnalysisResult({ analysis }: TradeAnalysisProps) {
   const { trade_analysis } = analysis
-  const { simple_conclusion, market_conditions, technical_indicators, trade_plan } = trade_analysis
 
-  const formatIDR = (amount: number) => {
+  if (!trade_analysis) {
+    return  <div className="space-y-6"><Card className="border-2"><div>Failed to load analysis</div></Card></div>
+  }
+
+  const { simple_conclusion, market_conditions, technical_indicators, trade_plan } = trade_analysis
+  const formatUang = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+  const formatIDR = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount)
@@ -339,7 +349,7 @@ export function TradeAnalysisResult({ analysis }: TradeAnalysisProps) {
 
             <div className="space-y-2">
               <span className="text-sm font-medium text-muted-foreground">Capital Used</span>
-              <p className="text-xl font-bold">{formatIDR(trade_plan.estimated_capital_used)}</p>
+              <p className="text-xl font-bold">{formatUang(trade_plan.estimated_capital_used)}</p>
               <p className="text-xs text-muted-foreground">Estimated</p>
             </div>
 
